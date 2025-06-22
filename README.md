@@ -1,12 +1,12 @@
 🚀 CRM de Ventas - MCR-VENTAS
-https://img.shields.io/badge/Java-17-orange?style=flat&logo=java
-https://img.shields.io/badge/Spring_Boot-3.1-green?style=flat&logo=spring
-https://img.shields.io/badge/MySQL-8.0-blue?style=flat&logo=mysql
-https://img.shields.io/badge/License-MIT-yellow
+![Java](https://img.shields.io/badge/Java-17-orange?style=flat&logo=java)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.1-green?style=flat&logo=spring)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-blue?style=flat&logo=mysql)
+
 
 Un sistema CRM para gestión de ventas desarrollado con Java Spring Boot que permite administrar productos, clientes y transacciones comerciales con autenticación personalizada.
 
-✨ Características principales
+Características principales
 Autenticación personalizada sin Spring Security
 
 Dashboard interactivo con datos clave
@@ -131,3 +131,4 @@ Abre un Pull Request
 Jahir Vera
 📧 [kevinnveralopez@gmail.com]
 🌐 https://github.com/jahirtheprogramer
+⭐ Si este proyecto te resulta útil, por favor considere darle una estrella en GitHub. ¡Gracias!
