@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Proveedores</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #f0fdf4;
+        margin: 0;
+      }
+
+      .sidebar {
+        width: 60px;
+        background-color: #2e7d32;
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        overflow-x: hidden;
+        transition: width 0.3s ease;
+        z-index: 1000;
+        color: white;
+      }
+
+      .sidebar:hover {
+        width: 220px;
+      }
+
+      .sidebar .logo {
+        font-size: 1.5rem;
+        padding: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0.75rem 1rem;
+        color: white;
+        text-decoration: none;
+        white-space: nowrap;
+        overflow: hidden;
+        transition: background-color 0.3s;
+      }
+
+      .sidebar a:hover {
+        background-color: #388e3c;
+      }
+
+      .sidebar i {
+        font-size: 1.2rem;
+      }
+
+      .content {
+        margin-left: 60px;
+        transition: margin-left 0.3s ease;
+        padding: 2rem;
+      }
+
+      .sidebar:hover ~ .content {
+        margin-left: 220px;
+      }
+
+      .form-control {
+        margin-bottom: 1rem;
+      }
+
+      .btn-danger {
+        margin-left: 1rem;
+      }
+
+      .list-group-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="logo">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span class="d-none d-lg-inline">CRM Ventas</span>
+      </div>
+      <a href="/Clientes"
+        ><i class="bi bi-people-fill"></i> <span>Clientes</span></a
+      >
+      <a href="/Productos"
+        ><i class="bi bi-box-seam"></i> <span>Productos</span></a
+      >
+      <a href="/Proveedor"
+        ><i class="bi bi-truck"></i> <span>Proveedores</span></a
+      >
+      <a href="/Venta"><i class="bi bi-cart-check"></i> <span>Ventas</span></a>
+      <a href="/login" class="mt-auto"
+        ><i class="bi bi-box-arrow-left"></i> <span>Salir</span></a
+      >
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+      <h2 class="mb-4">Gestión de Proveedores</h2>
+
+      <form id="proveedorForm" class="mb-4">
+        <div class="row">
+          <div class="col-md-6">
+            <input
+              type="text"
+              id="nombre"
+              class="form-control"
+              placeholder="Nombre del proveedor"
+              required
+            />
+          </div>
+          <div class="col-md-6">
+            <input
+              type="text"
+              id="contacto"
+              class="form-control"
+              placeholder="Nombre de contacto"
+              required
+            />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <input
+              type="email"
+              id="email"
+              class="form-control"
+              placeholder="Email del proveedor"
+              required
+            />
+          </div>
+          <div class="col-md-6">
+            <input
+              type="text"
+              id="telefono"
+              class="form-control"
+              placeholder="Teléfono del proveedor"
+              required
+            />
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            <input
+              type="text"
+              id="direccion"
+              class="form-control"
+              placeholder="Dirección del proveedor"
+              required
+            />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3">
+          <i class="bi bi-save"></i> Registrar Proveedor
+        </button>
+      </form>
+
+      <h4>Listado de Proveedores</h4>
+      <ul id="listaProveedores" class="list-group"></ul>
+
+      <button
+        class="btn btn-outline-secondary mt-4"
+        onclick="window.location.href='/'"
+      >
+        <i class="bi bi-arrow-left"></i> Volver al Inicio
+      </button>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      (async function () {
+        const url = "/api/proveedores";
+
+        document
+          .getElementById("proveedorForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const nombre = document.getElementById("nombre").value;
+            const contacto = document.getElementById("contacto").value;
+            const email = document.getElementById("email").value;
+            const telefono = document.getElementById("telefono").value;
+            const direccion = document.getElementById("direccion").value;
+
+            try {
+              const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  nombre,
+                  contacto,
+                  email,
+                  telefono,
+                  direccion,
+                }),
+              });
+
+              if (!response.ok) {
+                throw new Error("Error al registrar proveedor");
+              }
+
+              document.getElementById("proveedorForm").reset();
+              await cargarProveedores();
+            } catch (error) {
+              console.error("Error en el registro:", error);
+              alert("Hubo un error al registrar el proveedor.");
+            }
+          });
+
+        async function cargarProveedores() {
+          try {
+            const res = await fetch(url);
+            const proveedores = await res.json();
+
+            const lista = document.getElementById("listaProveedores");
+            lista.innerHTML = "";
+
+            proveedores.forEach((p) => {
+              const li = document.createElement("li");
+              li.className = "list-group-item";
+
+              const info = document.createElement("div");
+              info.innerText = `${p.nombre} (${p.contacto})`;
+
+              const btn = document.createElement("button");
+              btn.className = "btn btn-sm btn-danger";
+              btn.innerHTML = '<i class="bi bi-trash"></i>';
+              btn.onclick = async () => {
+                await fetch(`${url}/${p.id}`, { method: "DELETE" });
+                await cargarProveedores();
+              };
+
+              li.appendChild(info);
+              li.appendChild(btn);
+              lista.appendChild(li);
+            });
+          } catch (error) {
+            console.error("Error al cargar proveedores:", error);
+          }
+        }
+
+        await cargarProveedores();
+      })();
+    </script>
+  </body>
+</html>

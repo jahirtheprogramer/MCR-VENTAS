@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Gestión de Productos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #e3f2fd;
+      }
+
+      .container {
+        max-width: 900px;
+        margin-top: 40px;
+      }
+
+      .card {
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-danger {
+        margin-left: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="text-center mb-4">
+        <h1 class="text-primary">
+          <i class="bi bi-box-seam"></i> Gestión de Productos
+        </h1>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Registrar nuevo producto</h5>
+          <form id="productoForm" class="row g-3">
+            <div class="col-md-6">
+              <input
+                type="text"
+                id="nombre"
+                class="form-control"
+                placeholder="Nombre del producto"
+                required
+              />
+            </div>
+            <div class="col-md-6">
+              <input
+                type="text"
+                id="descripcion"
+                class="form-control"
+                placeholder="Descripción"
+                required
+              />
+            </div>
+            <div class="col-md-4">
+              <input
+                type="number"
+                id="precio"
+                class="form-control"
+                placeholder="Precio"
+                required
+              />
+            </div>
+            <div class="col-md-4">
+              <input
+                type="number"
+                id="cantidad"
+                class="form-control"
+                placeholder="Cantidad en stock"
+                required
+              />
+            </div>
+            <div class="col-md-4">
+              <input
+                type="number"
+                id="proveedorId"
+                class="form-control"
+                placeholder="ID del proveedor"
+                required
+              />
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-plus-circle"></i> Registrar Producto
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Listado de Productos</h5>
+          <ul class="list-group" id="listaProductos">
+            <!-- Lista de productos aquí -->
+          </ul>
+        </div>
+      </div>
+
+      <div class="text-center mt-4">
+        <a href="/" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left-circle"></i> Volver al Inicio
+        </a>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+      (async function () {
+        const url = "/api/productos";
+
+        document
+          .getElementById("productoForm")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const nombre = document.getElementById("nombre").value;
+            const descripcion = document.getElementById("descripcion").value;
+            const precio = parseFloat(document.getElementById("precio").value);
+            const cantidad = parseInt(
+              document.getElementById("cantidad").value
+            );
+            const proveedorId = parseInt(
+              document.getElementById("proveedorId").value
+            );
+
+            try {
+              const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  nombre,
+                  descripcion,
+                  precio,
+                  cantidad,
+                  proveedor: { id: proveedorId },
+                }),
+              });
+
+              if (!response.ok) throw new Error("Error al registrar producto");
+
+              document.getElementById("productoForm").reset();
+              await cargarProductos();
+            } catch (error) {
+              console.error("Error en el registro:", error);
+              alert("Hubo un error al registrar el producto.");
+            }
+          });
+
+        async function cargarProductos() {
+          try {
+            const res = await fetch(url);
+            const productos = await res.json();
+
+            const lista = document.getElementById("listaProductos");
+            lista.innerHTML = "";
+
+            productos.forEach((producto) => {
+              const li = document.createElement("li");
+              li.className =
+                "list-group-item d-flex justify-content-between align-items-start";
+
+              li.innerHTML = `
+                <div>
+                  <strong>${producto.nombre}</strong> - ${producto.descripcion}<br />
+                  <small><b>Precio:</b> $${producto.precio} | <b>Cantidad:</b> ${producto.cantidad}</small>
+                </div>
+                <button class="btn btn-sm btn-danger">
+                  <i class="bi bi-trash"></i>
+                </button>
+              `;
+
+              li.querySelector("button").onclick = async () => {
+                await fetch(`${url}/${producto.id}`, { method: "DELETE" });
+                await cargarProductos();
+              };
+
+              lista.appendChild(li);
+            });
+          } catch (error) {
+            console.error("Error al cargar productos:", error);
+          }
+        }
+
+        await cargarProductos();
+      })();
+    </script>
+  </body>
+</html>

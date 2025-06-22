@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Experiencia CRM | Next-Gen</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.12.0/dist/tf.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary: #00c853;
+        --secondary: #1de9b6;
+        --dark: #1a237e;
+        --light: #e8f5e9;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: "Montserrat", sans-serif;
+        background: #000;
+        color: white;
+      }
+
+      #canvas3d {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+      }
+
+      .slide {
+        position: absolute;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 1.5s ease-in-out;
+        pointer-events: none;
+      }
+
+      .slide.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      h1 {
+        font-size: 4rem;
+        background: linear-gradient(to right, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 1rem;
+        text-align: center;
+        text-shadow: 0 0 20px rgba(29, 233, 182, 0.3);
+      }
+
+      p {
+        font-size: 1.5rem;
+        max-width: 800px;
+        text-align: center;
+        line-height: 1.6;
+        margin-bottom: 3rem;
+      }
+
+      .btn-holographic {
+        background: rgba(0, 200, 83, 0.2);
+        border: 2px solid var(--primary);
+        color: white;
+        padding: 15px 40px;
+        font-size: 1.2rem;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s;
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .btn-holographic:hover {
+        background: rgba(0, 200, 83, 0.4);
+        box-shadow: 0 0 30px rgba(0, 200, 83, 0.6);
+        transform: translateY(-5px);
+      }
+
+      .btn-holographic::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+          to bottom right,
+          transparent,
+          transparent,
+          transparent,
+          var(--secondary),
+          transparent,
+          transparent
+        );
+        transform: rotate(30deg);
+        animation: shine 3s infinite;
+      }
+
+      @keyframes shine {
+        0% {
+          transform: rotate(30deg) translate(-30%, -30%);
+        }
+        100% {
+          transform: rotate(30deg) translate(30%, 30%);
+        }
+      }
+
+      .voice-control {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid var(--secondary);
+      }
+
+      .voice-control:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px var(--secondary);
+      }
+
+      .voice-control i {
+        font-size: 1.5rem;
+        color: var(--secondary);
+      }
+
+      .gesture-hint {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        font-size: 0.9rem;
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas3d"></canvas>
+
+    <div class="slide active" id="slide1">
+      <h1>JEDES SOFTWARE SOLUTIONS</h1>
+      <p>Experimenta el CRM más avanzado para tu negocio</p>
+      <button class="btn-holographic" onclick="nextSlide()">Explorar</button>
+    </div>
+
+    <div class="slide" id="slide2">
+      <h1>Visualización de datos</h1>
+      <p>Sumérgete en tus registros en un sistema eficaz de registro</p>
+      <button class="btn-holographic" onclick="nextSlide()">Siguiente</button>
+    </div>
+
+    <div class="slide" id="slide3">
+      <h1>Simple y compacto</h1>
+      <p>Controla el sistema con facilidad y facil entendimiento</p>
+      <button class="btn-holographic" onclick="nextSlide()">Continuar</button>
+    </div>
+
+    <div class="slide" id="slide4">
+      <h1>Preparado para el Futuro</h1>
+      <p>
+        Integración con nuevas tecnologias desarrollara tu negocio por encima de
+        la competencia
+      </p>
+      <button class="btn-holographic" onclick="startExperience()">
+        Comenzar Experiencia
+      </button>
+    </div>
+
+    <div class="voice-control" id="voiceControl">
+      <i class="bi bi-mic-fill"></i>
+    </div>
+
+    <div class="gesture-hint">←Usa comandos de voz: Siguiente o volver→</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"></script>
+    <script>
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById("canvas3d"),
+        alpha: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const particlesGeometry = new THREE.BufferGeometry();
+      const particleCount = 5000;
+
+      const posArray = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 10;
+      }
+
+      particlesGeometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(posArray, 3)
+      );
+
+      const particlesMaterial = new THREE.PointsMaterial({
+        size: 0.02,
+        color: 0x00c853,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+      });
+
+      const particlesMesh = new THREE.Points(
+        particlesGeometry,
+        particlesMaterial
+      );
+      scene.add(particlesMesh);
+
+      camera.position.z = 2;
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        particlesMesh.rotation.x += 0.0005;
+        particlesMesh.rotation.y += 0.0005;
+
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      let currentSlide = 1;
+      const totalSlides = 4;
+
+      function nextSlide() {
+        document
+          .getElementById(`slide${currentSlide}`)
+          .classList.remove("active");
+        currentSlide = currentSlide < totalSlides ? currentSlide + 1 : 1;
+        document.getElementById(`slide${currentSlide}`).classList.add("active");
+
+        particlesMaterial.color.setHex(
+          currentSlide === 1
+            ? 0x00c853
+            : currentSlide === 2
+            ? 0x1de9b6
+            : currentSlide === 3
+            ? 0x1a237e
+            : 0x7b1fa2
+        );
+      }
+
+      function startExperience() {
+        window.location.href = "/login";
+      }
+
+      const voiceControl = document.getElementById("voiceControl");
+      let isListening = false;
+      let recognizer;
+
+      async function initVoiceControl() {
+        recognizer = await tf.task.audio.speechCommands.create("BROWSER_FFT");
+        await recognizer.ensureModelLoaded();
+
+        voiceControl.addEventListener("click", async () => {
+          if (!isListening) {
+            isListening = true;
+            voiceControl.innerHTML = '<i class="bi bi-mic-mute-fill"></i>';
+            recognizer.listen(
+              (result) => {
+                const scores = result.scores;
+                const predictedCommand = scores.indexOf(Math.max(...scores));
+                const commands = recognizer.wordLabels();
+
+                if (commands[predictedCommand] === "siguiente") {
+                  nextSlide();
+                } else if (commands[predictedCommand] === "volver") {
+                  prevSlide();
+                }
+              },
+              {
+                includeSpectrogram: true,
+                probabilityThreshold: 0.75,
+                invokeCallbackOnNoiseAndUnknown: true,
+                overlapFactor: 0.5,
+              }
+            );
+          } else {
+            recognizer.stopListening();
+            isListening = false;
+            voiceControl.innerHTML = '<i class="bi bi-mic-fill"></i>';
+          }
+        });
+      }
+
+      setTimeout(initVoiceControl, 2000);
+
+      let startX;
+      window.addEventListener("touchstart", (e) => {
+        startX = e.touches[0].clientX;
+      });
+
+      window.addEventListener("touchend", (e) => {
+        const endX = e.changedTouches[0].clientX;
+        if (startX - endX > 50) nextSlide();
+        if (endX - startX > 50) prevSlide();
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight") nextSlide();
+        if (e.key === "ArrowLeft") prevSlide();
+      });
+
+      function prevSlide() {
+        document
+          .getElementById(`slide${currentSlide}`)
+          .classList.remove("active");
+        currentSlide = currentSlide > 1 ? currentSlide - 1 : totalSlides;
+        document.getElementById(`slide${currentSlide}`).classList.add("active");
+      }
+    </script>
+  </body>
+</html>

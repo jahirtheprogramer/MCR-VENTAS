@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CRM Ventas - Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Bootstrap + Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary-color: #2e7d32;
+        --primary-light: #388e3c;
+        --primary-dark: #1b5e20;
+        --accent-color: #43a047;
+        --bg-color: #f0fdf4;
+        --card-bg: #e8f5e9;
+        --text-light: #ffffff;
+        --text-dark: #333333;
+      }
+
+      body {
+        background-color: var(--bg-color);
+        margin: 0;
+        font-family: "Segoe UI", sans-serif;
+        color: var(--text-dark);
+      }
+
+      /* Sidebar mejorada */
+      .sidebar {
+        width: 70px;
+        background: linear-gradient(
+          180deg,
+          var(--primary-dark),
+          var(--primary-color)
+        );
+        height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        overflow-x: hidden;
+        transition: all 0.3s ease;
+        z-index: 1000;
+        color: var(--text-light);
+        box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sidebar:hover {
+        width: 220px;
+      }
+
+      .sidebar .logo {
+        font-size: 1.5rem;
+        padding: 1.5rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+      }
+
+      .sidebar .logo i {
+        font-size: 1.8rem;
+        color: var(--text-light);
+        min-width: 30px;
+      }
+
+      .sidebar .nav-items {
+        flex: 1;
+        padding-top: 1rem;
+        overflow-y: auto;
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0.85rem 1.2rem;
+        color: var(--text-light);
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+        position: relative;
+        margin: 0.2rem 0.5rem;
+        border-radius: 6px;
+      }
+
+      .sidebar a:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        transform: translateX(3px);
+      }
+
+      .sidebar a i {
+        font-size: 1.3rem;
+        min-width: 30px;
+        text-align: center;
+      }
+
+      .sidebar a span {
+        transition: opacity 0.3s ease;
+      }
+
+      .sidebar .logout {
+        margin-top: auto;
+        margin-bottom: 1rem;
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 6px;
+      }
+
+      .sidebar .logout:hover {
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+
+      /* Contenido principal */
+      .content {
+        margin-left: 70px;
+        transition: margin-left 0.3s ease;
+        padding: 2rem;
+        min-height: 100vh;
+      }
+
+      .sidebar:hover ~ .content {
+        margin-left: 220px;
+      }
+
+      /* Header */
+      .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      }
+
+      .page-header h2 {
+        color: var(--primary-dark);
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+
+      /* Tarjetas KPI mejoradas */
+      .kpi-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2.5rem;
+      }
+
+      .kpi-card {
+        background-color: var(--card-bg);
+        border-left: 5px solid var(--accent-color);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+      }
+
+      .kpi-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.1),
+          rgba(255, 255, 255, 0)
+        );
+        pointer-events: none;
+      }
+
+      .kpi-title {
+        font-weight: 600;
+        color: var(--primary-dark);
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .kpi-value {
+        font-size: 2.2rem;
+        color: var(--primary-dark);
+        font-weight: 700;
+        margin: 0.5rem 0;
+      }
+
+      .kpi-icon {
+        font-size: 2.2rem;
+        color: var(--accent-color);
+        position: absolute;
+        right: 1.5rem;
+        top: 1.5rem;
+        opacity: 0.3;
+      }
+
+      /* Sección de resumen */
+      .summary-section {
+        background-color: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin-top: 2rem;
+      }
+
+      .summary-section h4 {
+        color: var(--primary-dark);
+        margin-bottom: 1.2rem;
+        font-weight: 600;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        padding-bottom: 0.7rem;
+      }
+
+      .summary-section p {
+        line-height: 1.7;
+        color: var(--text-dark);
+        margin-bottom: 0;
+      }
+
+      /* Efecto de carga */
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .loading {
+        animation: pulse 1.5s infinite;
+        background-color: #e0e0e0;
+        color: transparent;
+        border-radius: 4px;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .sidebar {
+          width: 0;
+        }
+
+        .sidebar:hover {
+          width: 220px;
+        }
+
+        .content {
+          margin-left: 0;
+        }
+
+        .sidebar:hover ~ .content {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar Mejorada -->
+    <div class="sidebar">
+      <div class="logo">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span></span>
+      </div>
+
+      <div class="nav-items">
+        <a th:href="@{/Clientes}">
+          <i class="bi bi-people-fill"></i>
+          <span>Clientes</span>
+        </a>
+        <a th:href="@{/Productos}">
+          <i class="bi bi-box-seam"></i>
+          <span>Productos</span>
+        </a>
+        <a th:href="@{/Proveedor}">
+          <i class="bi bi-truck"></i>
+          <span>Proveedores</span>
+        </a>
+        <a th:href="@{/Venta}">
+          <i class="bi bi-cart-check"></i>
+          <span>Ventas</span>
+        </a>
+      </div>
+
+      <a href="#" onclick="cerrarSesion()" class="logout">
+        <i class="bi bi-box-arrow-left"></i>
+        <span>Cerrar sesión</span>
+      </a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+      <div class="page-header">
+        <h2>¡Bienvenido al CRM de Ventas!</h2>
+        <div class="user-info">
+          <span id="nombreUsuario">Usuario</span>
+          <div class="user-avatar">A</div>
+        </div>
+      </div>
+
+      <!-- Tarjetas KPI Mejoradas -->
+      <div class="kpi-container">
+        <div class="kpi-card">
+          <span class="kpi-title">Clientes Registrados</span>
+          <i class="bi bi-people-fill kpi-icon"></i>
+          <div class="kpi-value" id="kpi-clientes">...</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Productos en Stock</span>
+          <i class="bi bi-box-seam kpi-icon"></i>
+          <div class="kpi-value" id="kpi-productos">...</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Proveedores Activos</span>
+          <i class="bi bi-truck kpi-icon"></i>
+          <div class="kpi-value" id="kpi-proveedores">...</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-title">Ventas Hoy</span>
+          <i class="bi bi-cash-coin kpi-icon"></i>
+          <div class="kpi-value" id="kpi-ventas">...</div>
+        </div>
+      </div>
+
+      <div class="summary-section">
+        <h4>Resumen del Sistema</h4>
+        <p>
+          Desde este panel puedes acceder a todos los módulos del sistema CRM de
+          Ventas. Gestiona clientes, administra el inventario de productos,
+          controla a tus proveedores y registra ventas de manera eficiente. Todo
+          desde una interfaz intuitiva diseñada para optimizar tu flujo de
+          trabajo diario.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Mostrar estado de carga
+        const kpis = ["clientes", "productos", "proveedores", "ventas"];
+        kpis.forEach((id) => {
+          const element = document.getElementById(`kpi-${id}`);
+          element.textContent = "--";
+          element.classList.add("loading");
+        });
+
+        try {
+          const res = await fetch(
+            "http://localhost:8080/api/dashboard/resumen"
+          );
+          if (!res.ok) throw new Error("Error en la respuesta del servidor");
+
+          const data = await res.json();
+
+          kpis.forEach((id) => {
+            const element = document.getElementById(`kpi-${id}`);
+            element.classList.remove("loading");
+
+            if (id === "ventas") {
+              element.textContent = `$${
+                data.ventasHoy?.toLocaleString("es-ES") || "0"
+              }`;
+            } else {
+              element.textContent = data[id]?.toLocaleString("es-ES") || "0";
+            }
+          });
+        } catch (error) {
+          console.error("Error al cargar datos del dashboard:", error);
+          kpis.forEach((id) => {
+            const element = document.getElementById(`kpi-${id}`);
+            element.classList.remove("loading");
+            element.textContent = "Error";
+            element.style.color = "#e53935";
+          });
+        }
+      });
+      document.addEventListener("DOMContentLoaded", () => {
+        const usuarioJSON = localStorage.getItem("usuario");
+        if (usuarioJSON) {
+          const usuario = JSON.parse(usuarioJSON);
+          document.getElementById("nombreUsuario").textContent = usuario.nombre;
+        }
+      });
+      function cerrarSesion() {
+        localStorage.removeItem("usuario");
+        window.location.href = "/login";
+      }
+    </script>
+  </body>
+</html>

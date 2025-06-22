@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Módulo de Ventas</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      h1 {
+        text-align: center;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      select,
+      input[type="number"],
+      input[type="text"] {
+        width: 200px;
+        padding: 5px;
+        margin-top: 5px;
+      }
+      button {
+        margin-top: 10px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 15px;
+      }
+      table,
+      th,
+      td {
+        border: 1px solid #aaa;
+      }
+      th,
+      td {
+        padding: 8px;
+        text-align: center;
+      }
+      .subtotal-cell,
+      .total-cell {
+        font-weight: bold;
+      }
+      .error {
+        color: red;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Módulo de Ventas</h1>
+
+    <section id="formulario-venta">
+      <label for="usuario-select">Usuario (vendedor):</label>
+      <select id="usuario-select">
+        <option value="">-- Seleccione Usuario --</option>
+      </select>
+
+      <hr />
+
+      <h3>Detalle de la venta</h3>
+
+      <div id="linea-detalle">
+        <label for="producto-select">Producto:</label>
+        <select id="producto-select">
+          <option value="">-- Seleccione Producto --</option>
+        </select>
+
+        <label for="cantidad-input">Cantidad:</label>
+        <input type="number" id="cantidad-input" min="1" value="1" />
+
+        <label for="precio-unitario-input">Precio Unitario:</label>
+        <input
+          type="number"
+          id="precio-unitario-input"
+          min="0"
+          step="0.01"
+          value="0"
+        />
+
+        <button id="agregar-detalle-btn">Agregar Línea</button>
+        <span class="error" id="error-linea"></span>
+      </div>
+
+      <table id="tabla-detalles">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Subtotal</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align: right">
+              <strong>Total:</strong>
+            </td>
+            <td class="total-cell" id="total-venta">0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <button id="guardar-venta-btn">Registrar Venta</button>
+      <span class="error" id="error-venta"></span>
+      <hr />
+    </section>
+
+    <section id="listado-ventas">
+      <h2>Ventas Registradas</h2>
+      <table id="tabla-ventas">
+        <thead>
+          <tr>
+            <th>ID Venta</th>
+            <th>Usuario</th>
+            <th>Fecha</th>
+            <th>Total</th>
+            <th>Ver Detalles</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <script>
+      let usuarios = [];
+      let productos = [];
+      let detalles = [];
+      let totalVenta = 0.0;
+
+      function formatearDecimal(num) {
+        return parseFloat(num).toFixed(2);
+      }
+
+      async function cargarUsuariosYProductos() {
+        try {
+          // Cargar usuarios
+          const respUsuarios = await fetch("/api/usuarios");
+          const usuariosData = await respUsuarios.json();
+          console.log("Usuarios recibidos:", usuariosData);
+
+          if (!Array.isArray(usuariosData)) {
+            throw new Error("La respuesta de usuarios no es un array");
+          }
+
+          usuarios = usuariosData;
+
+          const selectUsuario = document.getElementById("usuario-select");
+          selectUsuario.innerHTML =
+            '<option value="">-- Seleccione Usuario --</option>';
+
+          usuarios.forEach((u) => {
+            const opt = document.createElement("option");
+            opt.value = u.id;
+            opt.textContent = u.nombre;
+            selectUsuario.appendChild(opt);
+          });
+
+          // Cargar productos
+          const respProductos = await fetch("/api/productos");
+          const productosData = await respProductos.json();
+          console.log("Productos recibidos:", productosData);
+
+          if (!Array.isArray(productosData)) {
+            throw new Error("La respuesta de productos no es un array");
+          }
+
+          productos = productosData;
+
+          const selectProducto = document.getElementById("producto-select");
+          selectProducto.innerHTML =
+            '<option value="">-- Seleccione Producto --</option>';
+
+          productos.forEach((p) => {
+            const opt = document.createElement("option");
+            opt.value = p.id;
+            opt.textContent = p.nombre;
+            selectProducto.appendChild(opt);
+          });
+
+          document
+            .getElementById("producto-select")
+            .addEventListener("change", () => {
+              const productoId = parseInt(
+                document.getElementById("producto-select").value
+              );
+              const productoSeleccionado = productos.find(
+                (p) => p.id === productoId
+              );
+              if (productoSeleccionado) {
+                document.getElementById("precio-unitario-input").value =
+                  productoSeleccionado.precio.toFixed(2);
+              } else {
+                document.getElementById("precio-unitario-input").value = "0";
+              }
+            });
+        } catch (error) {
+          console.error(
+            "Error cargando usuarios o productos:",
+            error.message || error
+          );
+        }
+      }
+
+      function agregarLineaDetalle() {
+        const productoId = document.getElementById("producto-select").value;
+        const cantidad = parseInt(
+          document.getElementById("cantidad-input").value
+        );
+        const precioUnitario = parseFloat(
+          document.getElementById("precio-unitario-input").value
+        );
+        const errorLinea = document.getElementById("error-linea");
+        errorLinea.textContent = "";
+
+        // Validaciones básicas
+        if (!productoId) {
+          errorLinea.textContent = "Debes seleccionar un producto.";
+          return;
+        }
+        if (isNaN(cantidad) || cantidad <= 0) {
+          errorLinea.textContent = "Cantidad debe ser un número mayor a 0.";
+          return;
+        }
+        if (isNaN(precioUnitario) || precioUnitario < 0) {
+          errorLinea.textContent = "Precio unitario inválido.";
+          return;
+        }
+
+        const producto = productos.find((p) => p.id === parseInt(productoId));
+        const nombreProducto = producto ? producto.nombre : "Desconocido";
+
+        const subtotal = cantidad * precioUnitario;
+
+        const detalle = {
+          productoId: parseInt(productoId),
+          nombreProducto: nombreProducto,
+          cantidad: cantidad,
+          precioUnitario: precioUnitario,
+          subtotal: subtotal,
+        };
+
+        detalles.push(detalle);
+
+        renderizarTablaDetalles();
+
+        document.getElementById("cantidad-input").value = 1;
+        document.getElementById("precio-unitario-input").value = 0;
+      }
+
+      function renderizarTablaDetalles() {
+        const tbody = document.querySelector("#tabla-detalles tbody");
+        tbody.innerHTML = "";
+
+        totalVenta = 0.0;
+        detalles.forEach((d, index) => {
+          const tr = document.createElement("tr");
+
+          tr.innerHTML = `
+          <td>${d.nombreProducto}</td>
+          <td>${d.cantidad}</td>
+          <td>${formatearDecimal(d.precioUnitario)}</td>
+          <td class="subtotal-cell">${formatearDecimal(d.subtotal)}</td>
+          <td>
+            <button class="btn-eliminar" data-index="${index}">Eliminar</button>
+          </td>
+        `;
+          tbody.appendChild(tr);
+
+          totalVenta += d.subtotal;
+        });
+
+        document.getElementById("total-venta").textContent =
+          formatearDecimal(totalVenta);
+
+        // Asociar eventos de “Eliminar” a cada botón
+        document.querySelectorAll(".btn-eliminar").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            const i = parseInt(e.target.getAttribute("data-index"));
+            detalles.splice(i, 1);
+            renderizarTablaDetalles();
+          });
+        });
+      }
+
+      async function guardarVenta() {
+        const errorVenta = document.getElementById("error-venta");
+        errorVenta.textContent = "";
+
+        const usuarioId = document.getElementById("usuario-select").value;
+        if (!usuarioId) {
+          errorVenta.textContent = "Debes seleccionar un usuario.";
+          return;
+        }
+        if (detalles.length === 0) {
+          errorVenta.textContent =
+            "Debes agregar al menos una línea de detalle.";
+          return;
+        }
+
+        const ventaDTO = {
+          usuarioId: parseInt(usuarioId),
+          detalles: detalles.map((d) => ({
+            productoId: d.productoId,
+            cantidad: d.cantidad,
+            precioUnitario: d.precioUnitario,
+          })),
+        };
+
+        try {
+          const resp = await fetch("/api/ventas", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(ventaDTO),
+          });
+
+          if (!resp.ok) {
+            const textoError = await resp.text();
+            throw new Error(textoError);
+          }
+
+          const ventaGuardada = await resp.json();
+          alert("Venta registrada con éxito (ID: " + ventaGuardada.id + ")");
+
+          // Limpiar formulario
+          detalles = [];
+          renderizarTablaDetalles();
+          document.getElementById("usuario-select").value = "";
+
+          // Refrescar listado de ventas
+          cargarListadoVentas();
+        } catch (err) {
+          console.error("Error guardando venta:", err);
+          errorVenta.textContent = "Error al guardar la venta: " + err.message;
+        }
+      }
+
+      async function cargarListadoVentas() {
+        try {
+          const resp = await fetch("/api/ventas");
+          const ventas = await resp.json();
+
+          const tbody = document.querySelector("#tabla-ventas tbody");
+          tbody.innerHTML = ""; // limpiar
+
+          ventas.forEach((v) => {
+            const tr = document.createElement("tr");
+
+            const fechaObj = new Date(v.fecha);
+            const fechaStr = fechaObj.toLocaleString();
+
+            tr.innerHTML = `
+            <td>${v.id}</td>
+            <td>${v.usuario ? v.usuario.nombre : "---"}</td>
+            <td>${fechaStr}</td>
+            <td>${formatearDecimal(v.total)}</td>
+            <td><button class="ver-detalles-btn" data-id="${
+              v.id
+            }">Ver Detalles</button></td>
+          `;
+            tbody.appendChild(tr);
+          });
+
+          document.querySelectorAll(".ver-detalles-btn").forEach((btn) => {
+            btn.addEventListener("click", async (e) => {
+              const ventaId = e.target.getAttribute("data-id");
+              await mostrarDetallesVenta(ventaId);
+            });
+          });
+        } catch (error) {
+          console.error("Error cargando listado de ventas:", error);
+        }
+      }
+
+      async function mostrarDetallesVenta(idVenta) {
+        try {
+          const resp = await fetch(`/api/ventas/${idVenta}`);
+          if (!resp.ok) {
+            throw new Error("Venta no encontrada");
+          }
+          const venta = await resp.json();
+
+          let texto = `Detalles de la venta ID ${venta.id}:\n\n`;
+          texto += `Usuario: ${venta.usuario ? venta.usuario.nombre : "---"}\n`;
+          texto += `Fecha: ${new Date(venta.fecha).toLocaleString()}\n`;
+          texto += `Total: $${formatearDecimal(venta.total)}\n\n`;
+          texto += `Líneas:\n`;
+
+          venta.detalles.forEach((d) => {
+            texto += `- Producto: ${d.productoNombre} | Cantidad: ${
+              d.cantidad
+            } | Precio Unit.: $${formatearDecimal(
+              d.precioUnitario
+            )} | Subtotal: $${formatearDecimal(d.subtotal)}\n`;
+          });
+
+          alert(texto);
+        } catch (err) {
+          alert("Error al obtener detalles de la venta: " + err.message);
+        }
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        cargarUsuariosYProductos();
+        cargarListadoVentas();
+
+        document
+          .getElementById("agregar-detalle-btn")
+          .addEventListener("click", agregarLineaDetalle);
+
+        document
+          .getElementById("guardar-venta-btn")
+          .addEventListener("click", guardarVenta);
+      });
+    </script>
+  </body>
+</html>
